@@ -1,0 +1,49 @@
+Hadoop Common Commands
+
+List Files
+$hadoop fs -ls <directory path>
+
+
+Remove File
+$hadoop fs -rm <file path>
+
+Remove Directory
+$hadoop fs -rm -r <directory path>
+
+Copy data file from local computer to Hadoop Cluster
+$hadoop fs -put <file path (source on local machine)> <file path (destination on cluster)>
+
+Copy data file from Hadoop Cluster to local computer
+$hadoop fs -get <file path (source on cluster)> <file path (destination on local machine)>
+
+
+
+Java Code Compilation Command
+
+
+$hadoop com.sun.tools.javac.Main <Program.java (file name)> -d classes -target 1.7 -source 1.7
+
+** -d classes is the switch to put all the compiled class file from the code into classes folder
+** -target 1.7 -source 1.7 is used to compile the given code for target machine running java version
+   this is important because our cluster is running java version 1.7
+
+
+
+Jar File creation command
+
+$jar -cvf <Program.jar (name of jar file you wish to create)> -C classes/ <destination>
+
+** -C classes/ switch enable the command to take compiled class file from classes folder
+
+
+
+Hadoop Command to execute your jar file generated from previous command
+
+$hadoop jar <jar file name (i.e, Program.jar)> <Main Class Name (name of your main class used in code)> <input path on cluster (i.e, input/books/*)> <output destination directory (on cluster)>
+
+** input/books/* switch will read all the files in the books directory
+** if you want to use specific file then use this input/books/file.txt
+
+
+Link for detailed list of commands
+https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/FileSystemShell.html
