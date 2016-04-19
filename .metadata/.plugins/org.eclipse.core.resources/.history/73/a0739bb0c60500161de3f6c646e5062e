@@ -1,0 +1,72 @@
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+
+public class FinalDWDM {
+
+	public static void main(String[] args) throws Exception {
+		Configuration conf = new Configuration();
+
+		Job job = new Job(conf, "PhaseOne");
+
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(IntWritable.class);
+		job.setJarByClass(PhaseOne.class);
+
+		job.setMapperClass(Map1.class);
+		job.setReducerClass(Reduce1.class);
+
+		job.setInputFormatClass(TextInputFormat.class);
+		job.setOutputFormatClass(TextOutputFormat.class);
+
+		FileInputFormat.addInputPath(job, new Path(args[0]));
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+
+		if(job.waitForCompletion(true)){
+			Configuration conf2 = new Configuration();
+
+			Job job2 = new Job(conf2, "PhaseOne");
+
+			job2.setOutputKeyClass(Text.class);
+			job2.setOutputValueClass(IntWritable.class);
+			job2.setJarByClass(PhaseOne.class);
+
+			job2.setMapperClass(Map2.class);
+			job2.setReducerClass(Reduce2.class);
+
+			job2.setInputFormatClass(TextInputFormat.class);
+			job2.setOutputFormatClass(TextOutputFormat.class);
+
+			FileInputFormat.addInputPath(job2, new Path(args[0]));
+			FileOutputFormat.setOutputPath(job2, new Path(args[1]));
+			
+			if(job2.waitForCompletion(true)){
+				Configuration conf3 = new Configuration();
+
+				Job job3 = new Job(conf3, "PhaseOne");
+
+				job3.setOutputKeyClass(Text.class);
+				job3.setOutputValueClass(IntWritable.class);
+				job3.setJarByClass(PhaseOne.class);
+
+				job3.setMapperClass(Map3.class);
+				job3.setReducerClass(Reduce3.class);
+
+				job3.setInputFormatClass(TextInputFormat.class);
+				job3.setOutputFormatClass(TextOutputFormat.class);
+
+				FileInputFormat.addInputPath(job3, new Path(args[0]));
+				FileOutputFormat.setOutputPath(job3, new Path(args[1]));
+
+			}
+			
+		}
+	}
+}

@@ -20,3 +20,15 @@ Command-line arguments:  -os linux -ws gtk -arch x86 -product org.eclipse.epp.pa
 
 !ENTRY org.eclipse.ui 1 1 2016-04-05 00:18:19.163
 !MESSAGE Workbench migration finished
+!SESSION 2016-04-12 23:08:17.719 -----------------------------------------------
+eclipse.buildId=4.5.2.M20160212-1500
+java.version=1.7.0_99
+java.vendor=Oracle Corporation
+BootLoader constants: OS=linux, ARCH=x86, WS=gtk, NL=en_US
+Framework arguments:  -product org.eclipse.epp.package.java.product
+Command-line arguments:  -os linux -ws gtk -arch x86 -product org.eclipse.epp.package.java.product
+
+!ENTRY org.eclipse.core.resources 2 2 2016-04-19 00:48:06.392
+!MESSAGE Save operation warnings.
+!SUBENTRY 1 org.eclipse.core.resources 2 234 2016-04-19 00:48:06.393
+!MESSAGE The project description file (.project) for 'MapOne' was missing.  This file contains important information about the project.  A new project description file has been created, but some information about the project may have been lost.

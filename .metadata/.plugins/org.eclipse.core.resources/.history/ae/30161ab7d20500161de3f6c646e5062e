@@ -1,0 +1,227 @@
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.TreeSet;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Reducer.Context;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+
+public class FinalDWDM {
+	
+	
+	public static class Map1 extends Mapper<LongWritable, Text, Text, IntWritable> {
+		private final static IntWritable one = new IntWritable(1);
+		private Text word = new Text();
+
+		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+			String doc = value.toString();
+			String docPart[] = doc.split(" "); // spliting input string to get
+												// individual words
+			String docName = docPart[0]; // getting the document number or the
+											// document name
+			String tempStr = ""; // temp string to construct the key part
+			// loop to collect all the words
+			// for loop counter i is starting as we have first element of each
+			// line as document number
+			for (int i = 1; i < docPart.length; i++) {
+				tempStr = docPart[i].replaceAll("\\p{P}", ""); // removing
+																// special
+																// character and
+																// punctuation
+																// from the word
+				tempStr = tempStr + "," + docName;
+				word.set(tempStr);// converting string to text writable
+				context.write(word, one);
+			}
+		}
+	}
+
+	public static class Reduce1 extends Reducer<Text, IntWritable, Text, IntWritable> {
+		HashMap<String, Integer> maxList = new HashMap<String, Integer>();
+		HashMap<String, Integer> redOutputList = new HashMap<String, Integer>();
+		
+
+		public void reduce(Text key, Iterable<IntWritable> values, Context context)
+				throws IOException, InterruptedException {
+			int sum = 0;
+			for (IntWritable val : values) {
+				sum += val.get();
+			}
+			context.write(key, new IntWritable(sum));
+		}
+
+	}
+
+
+	public static class Map2 extends Mapper<LongWritable, Text, Text, Text> {
+		
+		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+			String[] wordAndDocCounter = value.toString().split("\t");
+			String[] keyArr = wordAndDocCounter[0].split(",");
+			context.write(new Text(keyArr[1]), new Text(keyArr[0] + "," + wordAndDocCounter[1]));
+		}
+	}
+
+	public static class Reduce2 extends Reducer<Text, Text, Text, Text> {
+
+		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+			int maxVal = 0;
+			HashMap<String, Integer> tempCounter = new HashMap<String, Integer>();
+
+			for (Text val : values) {
+				String[] wordCounter = val.toString().split(",");
+				tempCounter.put(wordCounter[0], Integer.valueOf(wordCounter[1]));
+				sumOfWordsInDocument += Integer.parseInt(val.toString().split(",")[1]);
+			}
+			for (String wordKey : tempCounter.keySet()) {
+				context.write(new Text(wordKey + "," + key.toString()),
+						new Text(tempCounter.get(wordKey) + "," + sumOfWordsInDocument));
+			}
+
+		}
+
+		
+	}
+
+	public static class Map3 extends Mapper<LongWritable, Text, Text, Text> {
+		private final static IntWritable one = new IntWritable(1);
+		private Text outKey = new Text();
+
+		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+		
+			 String[] wordAndCounters = value.toString().split("\t");
+		     String[] nandCaptialN = wordAndCounters[1].split(",");
+		     context.write(new Text(wordAndCounters[0]), new Text("1,"+nandCaptialN[0] + "," + nandCaptialN[1]));
+		        
+		}
+	}
+
+	public static class Reduce3 extends Reducer<Text, Text, Text, Text> {
+        HashMap<String, String> tempFrequencies = new HashMap<String, String>();
+        TreeSet <String> documents = new TreeSet<String>();
+        
+		public void reduce(Text key, Iterable<Text> values, Context context)
+				throws IOException, InterruptedException {
+	
+	        int noDocsWordAppeared = 0;
+	        String nValue="",NValue="";
+	        
+	        documents.add(key.toString().split(",")[1]);
+	        for (Text val : values) {
+	        	
+	        	if(noDocsWordAppeared==0){
+	        		String[] documentAndFrequencies = val.toString().split(",");
+	        		nValue=documentAndFrequencies[1];
+	        		NValue=documentAndFrequencies[2];
+	        	}
+	            noDocsWordAppeared++;
+	        }
+	 
+           
+           
+        tempFrequencies.put(key.toString(), noDocsWordAppeared+","+nValue+","+NValue) ;   
+	    context.write(key, new Text(noDocsWordAppeared+","+nValue+","+NValue));      
+	        
+	}
+
+		protected void cleanup(Context context) throws IOException, InterruptedException {
+
+			for(String s: tempFrequencies.keySet()){
+				
+				String[] values=tempFrequencies.get(s).split(",");
+				
+				double mValue= Double.parseDouble(values[0]);
+				double nValue= Double.parseDouble(values[1]);
+				double NValue= Double.parseDouble(values[2]);
+				double tf=nValue/NValue;
+				
+				int numberOfDocumentsInCorpus = documents.size();
+				
+			        
+		            double idf = (double) numberOfDocumentsInCorpus / mValue;
+		            double tfIdf = numberOfDocumentsInCorpus == (int)mValue ?
+		                    tf : tf * (Math.log(idf) / Math.log(2));
+		        NumberFormat formatter = new DecimalFormat("#0.00");          
+				context.write(new Text(s), new Text(""+formatter.format(tfIdf))); 
+			}
+		}
+		
+	}
+
+	
+	public static void main(String[] args) throws Exception {
+		Configuration conf = new Configuration();
+
+		Job job = new Job(conf, "PhaseOne");
+
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(IntWritable.class);
+		job.setJarByClass(FinalDWDM.class);
+
+		job.setMapperClass(Map1.class);
+		job.setReducerClass(Reduce1.class);
+
+		job.setInputFormatClass(TextInputFormat.class);
+		job.setOutputFormatClass(TextOutputFormat.class);
+
+		FileInputFormat.addInputPath(job, new Path(args[0]));
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+		
+		//job.waitForCompletion(true);
+		if(job.waitForCompletion(true)){
+			Configuration conf2 = new Configuration();
+
+			Job job2 = new Job(conf2, "PhaseOne");
+
+			job2.setOutputKeyClass(Text.class);
+			job2.setOutputValueClass(Text.class);
+			job2.setJarByClass(FinalDWDM.class);
+
+			job2.setMapperClass(Map2.class);
+			job2.setReducerClass(Reduce2.class);
+
+			job2.setInputFormatClass(TextInputFormat.class);
+			job2.setOutputFormatClass(TextOutputFormat.class);
+
+			FileInputFormat.addInputPath(job2, new Path(args[1]));
+			FileOutputFormat.setOutputPath(job2, new Path(args[2]));
+			job2.waitForCompletion(true);
+		}
+		/*	if(job2.waitForCompletion(true)){
+				Configuration conf3 = new Configuration();
+
+				Job job3 = new Job(conf3, "PhaseOne");
+
+				job3.setOutputKeyClass(Text.class);
+				job3.setOutputValueClass(IntWritable.class);
+				job3.setJarByClass(PhaseOne.class);
+
+				job3.setMapperClass(Map3.class);
+				job3.setReducerClass(Reduce3.class);
+
+				job3.setInputFormatClass(TextInputFormat.class);
+				job3.setOutputFormatClass(TextOutputFormat.class);
+
+				FileInputFormat.addInputPath(job3, new Path(args[0]));
+				FileOutputFormat.setOutputPath(job3, new Path(args[1]));
+
+				job2.waitForCompletion(true);
+			}
+			
+	
+		}*/
+	}
+}
